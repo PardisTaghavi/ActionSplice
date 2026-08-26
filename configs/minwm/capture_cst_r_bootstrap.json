@@ -1,0 +1,24 @@
+{
+  "experiment_name": "minwm_cst_r_bootstrap",
+  "num_latent_frames": 8,
+  "chunk_size": 4,
+  "denoising_steps": 4,
+  "event_pose_index": 4,
+  "intra_chunk_offset": 0,
+  "seeds": [1000],
+  "prompt_seed_stride": 1,
+  "prompt_files": [
+    "prompts/transport_pilot_60.txt",
+    "prompts/cst_paper_additional_90.txt"
+  ],
+  "train_prompt_count": 120,
+  "scenario_assignment": "round_robin",
+  "scenarios": [
+    "forward_yaw_left",
+    "forward_backward",
+    "yaw_left_forward",
+    "yaw_left_backward",
+    "backward_forward",
+    "backward_yaw_left"
+  ]
+}

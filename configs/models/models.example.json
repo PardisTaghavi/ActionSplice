@@ -1,0 +1,16 @@
+{
+  "note": "Placeholders only. CST corrector repositories are not public yet.",
+  "minwm": {
+    "backbone_root": "<PATH_TO_MINWM>",
+    "backbone_weights": "<PATH_TO_WAN_ACTION2V_WEIGHTS>",
+    "cst_r": "<HF_ORG>/<HF_MINWM_CST_R_REPO>/best.pt",
+    "cst_t": "<HF_ORG>/<HF_MINWM_CST_T_REPO>/best.pt"
+  },
+  "hyworld15": {
+    "backbone_root": "<PATH_TO_HY_WORLDPLAY>",
+    "backbone_weights": "<PATH_TO_HUNYUANVIDEO_1_5>",
+    "action_checkpoint": "<PATH_TO_HY_WORLDPLAY_ACTION_CHECKPOINT>",
+    "cst_r": "<HF_ORG>/<HF_HYWORLD15_CST_R_REPO>/best.pt",
+    "cst_t": "<HF_ORG>/<HF_HYWORLD15_CST_T_REPO>/best.pt"
+  }
+}

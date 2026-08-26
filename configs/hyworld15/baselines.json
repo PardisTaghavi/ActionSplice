@@ -1,0 +1,14 @@
+{
+  "experiment_name": "official_hyworld15_interruption_baseline_examples",
+  "chunk_size": 4,
+  "denoising_steps": 4,
+  "seeds": [0],
+  "prompt_file": "prompts/hyworld15_baseline_examples.txt",
+  "runtime_receipt_step": 2,
+  "command_block_schedules_by_interruptions": {
+    "1": ["w", "w", "j", "j", "j"],
+    "2": ["w", "w", "j", "j", "s", "s", "s"],
+    "3": ["w", "w", "j", "j", "s", "s", "l", "l", "l"],
+    "4": ["w", "w", "j", "j", "s", "s", "l", "l", "a", "a", "a"]
+  }
+}

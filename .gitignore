@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+build/
+dist/
+
+# Generated data and heavyweight artifacts
+checkpoints/
+captures/
+datasets/
+outputs/
+logs/
+third_party/
+wandb/
+
+# Editor/OS files
+.DS_Store
+.idea/
+.vscode/

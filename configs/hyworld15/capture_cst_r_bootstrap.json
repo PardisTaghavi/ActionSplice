@@ -1,0 +1,16 @@
+{
+  "experiment_name": "official_hyworld15_correct_bootstrap",
+  "num_latent_frames": 12,
+  "chunk_size": 4,
+  "denoising_steps": 4,
+  "seeds": [0, 1],
+  "prompt_file": "prompts/recurrent_cst_short_2int_3.txt",
+  "command_block_schedules": [
+    ["w", "j", "s"],
+    ["j", "w", "s"],
+    ["s", "j", "w"]
+  ],
+  "runtime_receipt_steps": [1, 2, 3],
+  "rotate_receipt_steps_by_seed": true,
+  "runtime_jump_horizon": 0
+}
