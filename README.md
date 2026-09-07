@@ -113,11 +113,6 @@ or corrector checkpoints. Placeholder Hugging Face IDs are kept in
 `configs/models/models.example.json`, and `scripts/download_weights.sh` exits
 until real repositories are configured.
 
-**Checkpoints:** [PardisTaghavi/ActionSplice on Hugging Face](https://huggingface.co/PardisTaghavi/ActionSplice/tree/main)
-
-The Hugging Face repository may remain access-controlled until the checkpoint
-release is finalized.
-
 Local corrector checkpoints can be loaded independently of the backbone:
 
 ```python
