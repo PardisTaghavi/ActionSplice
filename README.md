@@ -29,27 +29,6 @@ ActionSplice provides two separately trained correctors:
 | **CST-R** | Complete active chunk | Retarget a chunk after a control interruption |
 | **CST-T** | Uncommitted suffix only | Preserve already committed frames while retargeting the remainder |
 
-CST-T uses a hard temporal mask. The committed prefix is copied exactly; only
-the suffix is corrected.
-
-```mermaid
-flowchart LR
-    A[Active sampler state<br/>at solver step r] --> B[Backend state adapter]
-    B --> C{CST variant}
-    C -->|CST-R| D[Correct complete chunk]
-    C -->|CST-T| E[Preserve prefix<br/>correct suffix]
-    D --> F[Corrected state<br/>at the same step r]
-    E --> F
-    F --> G{Backend}
-    G -->|minWM| H[Re-noise clean prediction<br/>with stored transition noise]
-    G -->|HY-WM1.5| I[Use corrected Euler state]
-    H --> J[Resume original backbone<br/>for K-r solver calls]
-    I --> J
-```
-
-The runtime has no learned gate, adaptive fallback, horizon selection, or
-solver-step jump. The upstream backbone remains unchanged.
-
 ### Backend state conventions
 
 | Backend | Canonical state | Corrector target | Same-step reconstruction |
