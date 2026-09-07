@@ -15,7 +15,6 @@ and lets the original backbone finish its normal denoising trajectory.
 - [Training](#training)
 - [Inference and model loading](#inference-and-model-loading)
 - [Repository structure](#repository-structure)
-- [Development](#development)
 
 ## Method
 
@@ -198,19 +197,6 @@ Research checkpoints retain legacy role strings for strict validation:
 Public commands, files, and documentation use CST-R/CST-T.
 
 </details>
-
-## Development
-
-Run the CPU checks before committing:
-
-```bash
-ruff check .
-pytest
-```
-
-Generated captures, checkpoints, outputs, upstream repositories, and W&B
-artifacts are excluded by `.gitignore`. Do not commit private cluster paths,
-unpublished model IDs, or third-party weights.
 
 ## License
 
