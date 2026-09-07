@@ -33,9 +33,6 @@ ActionSplice provides two separately trained correctors:
 | minWM Wan Action2V | `[B,T,16,H,W]` | Clean prediction | Stored transition noise |
 | HY-WM1.5 | `[B,32,T,H,W]` | Direct Euler state | None; deterministic resume |
 
-See [docs/architecture.md](docs/architecture.md) for the implementation
-boundary between CST and the upstream world models.
-
 ## Installation
 
 ### Core and development tools
@@ -172,7 +169,7 @@ ActionSplice/
 │   ├── minwm/          minWM CST-R/CST-T capture and training configs
 │   ├── hyworld15/      HY CST-R/CST-T capture and training configs
 │   └── inference/      runnable single-rollout CST-R/CST-T examples
-├── docs/               architecture, training, inference, model loading
+├── docs/               training, inference, and model loading guides
 ├── scripts/            pinned upstream setup
 └── tests/               CPU unit tests
 ```
