@@ -12,11 +12,6 @@ The current implementation targets
 [minWM](https://github.com/shengshu-ai/minWM) and
 [HY-WorldPlay / HY-WM1.5](https://github.com/Tencent-Hunyuan/HY-WorldPlay).
 
-> [!IMPORTANT]
-> This repository is in pre-release staging. Corrector weights are not
-> public yet, and only the HY-WM1.5 CST-R inference path is wired end to end.
-> The [implementation status](#implementation-status) below is authoritative.
-
 ## Contents
 
 - [Method](#method)
