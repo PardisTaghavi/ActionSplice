@@ -8,10 +8,6 @@ restarting the chunk or skipping solver steps, ActionSplice applies one learned
 **Counterfactual State Transport (CST)** corrector at the current solver step
 and lets the original backbone finish its normal denoising trajectory.
 
-The current implementation targets
-[minWM](https://github.com/shengshu-ai/minWM) and
-[HY-WorldPlay / HY-WM1.5](https://github.com/Tencent-Hunyuan/HY-WorldPlay).
-
 ## Contents
 
 - [Method](#method)
