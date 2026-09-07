@@ -209,7 +209,7 @@ unpublished model IDs, or third-party weights.
 - Publish the four CST corrector checkpoints and model cards on Hugging Face.
 - Populate and publish the precomputed Hugging Face Space.
 - Add redistributable qualitative examples, paper citation, and final results.
-- Complete provenance review and select the open-source license.
+- Complete provenance review for migrated source modules.
 
 The detailed checklist lives in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
@@ -219,5 +219,4 @@ The paper citation will be added when the public preprint is available.
 
 ## License
 
-The project license is being finalized. A `LICENSE` file must be added before
-the repository is made public.
+ActionSplice is released under the [Apache License 2.0](LICENSE).

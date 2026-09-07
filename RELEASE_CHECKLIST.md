@@ -1,6 +1,6 @@
 # Public release checklist
 
-- [ ] Select and add the project license.
+- [x] Select and add the Apache License 2.0.
 - [ ] Complete provenance review for every migrated source module.
 - [ ] Replace provisional Hugging Face organization/model identifiers.
 - [ ] Export corrector weights as `safetensors`.
