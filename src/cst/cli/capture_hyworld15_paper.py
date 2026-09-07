@@ -50,9 +50,7 @@ def main() -> None:
     action_checkpoint = args.action_checkpoint.resolve()
     task_manifest = args.task_manifest.resolve()
     transport_checkpoint = (
-        None
-        if args.transport_checkpoint is None
-        else args.transport_checkpoint.resolve()
+        None if args.transport_checkpoint is None else args.transport_checkpoint.resolve()
     )
     if args.mode == "cst_r" and transport_checkpoint is None:
         raise ValueError("CST-R capture requires a frozen HY CST-R checkpoint")
@@ -185,9 +183,7 @@ def main() -> None:
         else:
             event = int(task["event_pose_index"])
             event_pose_indices = [event]
-            stale_by_event = {
-                event: _condition_from_commands(task["stale_commands"])
-            }
+            stale_by_event = {event: _condition_from_commands(task["stale_commands"])}
             receipt_steps = [1]
             offsets = {event: int(task["intra_chunk_offset"])}
 
@@ -236,9 +232,7 @@ def main() -> None:
             common = {
                 "capture_id": path.stem,
                 "dataset_name": (
-                    "cst_r_paper_150_v1"
-                    if args.mode == "cst_r"
-                    else "cst_t_paper_150_v1"
+                    "cst_r_paper_150_v1" if args.mode == "cst_r" else "cst_t_paper_150_v1"
                 ),
                 "dataset_split": str(task["dataset_split"]),
                 "master_id": str(task["master_id"]),

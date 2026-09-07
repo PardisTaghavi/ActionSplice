@@ -2,20 +2,25 @@
 
 ## Data paths
 
-The public tree contains the existing capture paths; it does not define a new
-teacher generator.
+Capture commands use the frozen upstream generators to construct matched
+source/target trajectories.
 
 ### minWM matched teachers
 
+The final CST-R dataset is recurrent and uses a frozen bootstrap corrector:
+
 ```bash
-actionsplice-capture-minwm \
+actionsplice-capture-minwm-recurrent \
   --minwm-root /path/to/minWM \
-  --experiment-config configs/minwm/capture_cst_r_bootstrap.json \
-  --output-dir datasets/minwm-cst-r-bootstrap
+  --experiment-config configs/minwm/capture_cst_r.json \
+  --transport-checkpoint /path/to/minwm-cst-r-pilot.pt \
+  --output-dir datasets/minwm-cst-r
 ```
 
-For CST-T, use `configs/minwm/capture_cst_t.json`. The same existing
-capture implementation applies hard prefix clamping for offsets `m=1,2,3`.
+The bootstrap dataset uses `actionsplice-capture-minwm` with
+`configs/minwm/capture_cst_r_bootstrap.json`. CST-T uses the same command with
+`configs/minwm/capture_cst_t.json`; its matched teacher clamps the prefix at
+every solver evaluation for offsets `m=1,2,3`.
 
 ### CST-R bootstrap (HY-WM1.5)
 
@@ -89,9 +94,11 @@ configs/hyworld15/train_cst_r.json
 configs/hyworld15/train_cst_t.json
 ```
 
-Copy it to a run directory and replace its `<PATH_TO_...>` decoder/backbone
-placeholders. Training infers latent channels and denoising steps from capture
-tensors.
+Copy it to a run directory and set its `<PATH_TO_...>` backbone, decoder,
+and pilot-checkpoint paths. Training infers latent channels and denoising
+steps from capture tensors. CST-T can initialize from a CST-R pilot:
+the loader copies compatible weights and zero-initializes only its new hard-mask
+input channel.
 
 ```bash
 actionsplice-train \
@@ -104,7 +111,7 @@ Use `--resume /path/to/checkpoint.pt` for a stopped run.
 
 ## Existing objective
 
-Repository cleanup did not add losses. The staged trainer preserves:
+Repository cleanup did not add losses. The shared trainer preserves:
 
 - normalized latent/state reconstruction loss;
 - minWM clean-prediction delta loss;

@@ -104,8 +104,6 @@ def capture_hyworld15_recurrent_sequence(
     offsets = {event: offsets.get(event, 0) for event in events}
     if any(not 0 <= value < chunk_size for value in offsets.values()):
         raise ValueError("Every intra-chunk offset must be in [0, chunk_size)")
-    if transport_model is not None and any(offsets.values()):
-        raise ValueError("On-policy HY mid-chunk transport is not enabled during dataset capture")
     requested_condition.validate(batch_size=batch_size, frame_count=frame_count)
     for condition in stale_conditions_by_event.values():
         condition.validate(batch_size=batch_size, frame_count=frame_count)
@@ -125,6 +123,9 @@ def capture_hyworld15_recurrent_sequence(
             raise ValueError("Corrector denoising schedule does not match HY-World 1.5")
         if int(model_config.max_jump_horizon) != 0:
             raise ValueError("Official HY CST-R/CST-T checkpoints must be same-step")
+        expected_role = "action_hm_state" if any(offsets.values()) else "action_h0_state"
+        if str(model_config.transport_role) != expected_role:
+            raise ValueError(f"Capture boundaries require checkpoint role {expected_role!r}")
 
     if history_selector is None:
         from hyvideo.utils.retrieval_context import select_aligned_memory_frames
@@ -225,7 +226,7 @@ def capture_hyworld15_recurrent_sequence(
             else:
                 event_ordinal = len(captures)
                 stale_condition = stale_conditions_by_event[start_frame]
-                old_states, old_flows, _, old_memory = run_branch(
+                old_states, old_flows, old_final, old_memory = run_branch(
                     initial=initial,
                     start_frame=start_frame,
                     condition=stale_condition,
@@ -266,6 +267,14 @@ def capture_hyworld15_recurrent_sequence(
                     ]
                     from ..core.runtime import apply_transport_model
 
+                    suffix_mask = None
+                    if intra_chunk_offset:
+                        suffix_mask = torch.zeros(
+                            [batch_size, chunk_size, 1, 1, 1],
+                            device=active_old.device,
+                            dtype=active_old.dtype,
+                        )
+                        suffix_mask[:, intra_chunk_offset:] = 1.0
                     corrected, correction = apply_transport_model(
                         model=transport_model,
                         active_state=active_old,
@@ -285,6 +294,7 @@ def capture_hyworld15_recurrent_sequence(
                         jump_horizon=0,
                         cached_prediction=active_old,
                         rollout_age=rollout_age,
+                        temporal_suffix_mask=suffix_mask,
                     )
                     correction.update(
                         event_ordinal=event_ordinal,
@@ -305,6 +315,14 @@ def capture_hyworld15_recurrent_sequence(
                         history_selector=history_selector,
                     )
                     active = spec.from_canonical(corrected)
+                    if intra_chunk_offset:
+                        active = torch.cat(
+                            [
+                                old_states[receipt][:, :, :intra_chunk_offset],
+                                active[:, :, intra_chunk_offset:],
+                            ],
+                            dim=2,
+                        )
                     for step_index in range(receipt, denoising_steps):
                         flow = _call_flow_model(
                             pipeline=pipeline,
@@ -320,7 +338,28 @@ def capture_hyworld15_recurrent_sequence(
                             step_index=step_index,
                             events=generator_events,
                         )
+                        if intra_chunk_offset:
+                            flow = torch.cat(
+                                [
+                                    old_flows[step_index][:, :, :intra_chunk_offset],
+                                    flow[:, :, intra_chunk_offset:],
+                                ],
+                                dim=2,
+                            )
                         active = _euler_step(active, flow, sigmas, step_index)
+                        if intra_chunk_offset:
+                            prefix_state = (
+                                old_states[step_index + 1]
+                                if step_index < denoising_steps - 1
+                                else old_final
+                            )
+                            active = torch.cat(
+                                [
+                                    prefix_state[:, :, :intra_chunk_offset],
+                                    active[:, :, intra_chunk_offset:],
+                                ],
+                                dim=2,
+                            )
                     student_final = active
 
                 transition_trace = torch.zeros(
@@ -395,6 +434,8 @@ def capture_hyworld15_recurrent_sequence(
                         "student_policy": (
                             "rollback_teacher"
                             if transport_model is None
+                            else "cst_t"
+                            if intra_chunk_offset
                             else "cst_r"
                         ),
                         "old_memory_indices": old_memory,

@@ -1,4 +1,4 @@
-"""Small, dependency-free contract shared by training, inference, and demos."""
+"""Small, dependency-free contract shared by training and inference."""
 
 from __future__ import annotations
 
@@ -29,18 +29,16 @@ class BackendSpec:
     checkpoint_roles: Mapping[CSTMethod, str]
 
     def role(self, method: CSTMethod) -> str:
-        try:
-            return self.checkpoint_roles[method]
-        except KeyError as error:
-            raise ValueError(f"Unknown CST method {method!r}") from error
+        if method not in self.checkpoint_roles:
+            raise ValueError(f"Unknown CST method {method!r}")
+        return self.checkpoint_roles[method]
 
     def method_for_role(self, role: str) -> CSTMethod:
         for method, expected_role in self.checkpoint_roles.items():
             if role == expected_role:
                 return method
         raise ValueError(
-            f"Checkpoint role {role!r} is not a {self.display_name} "
-            "CST-R or CST-T checkpoint"
+            f"Checkpoint role {role!r} is not a {self.display_name} CST-R or CST-T checkpoint"
         )
 
     def validate_checkpoint_config(

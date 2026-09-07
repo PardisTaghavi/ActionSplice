@@ -1,0 +1,9 @@
+{
+  "prompt": "A quiet forest trail at sunrise",
+  "seed": 0,
+  "chunk_size": 4,
+  "denoising_steps": 4,
+  "command_blocks": ["w", "w", "j", "j"],
+  "receipt_steps": [2],
+  "boundaries": [2]
+}

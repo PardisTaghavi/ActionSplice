@@ -22,7 +22,9 @@ def load_transport_model(
     payload = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     if "model_config" not in payload or "model" not in payload:
         raise ValueError(f"Malformed transport checkpoint {checkpoint_path}")
-    config = TransportModelConfig(**payload["model_config"])
+    config_values = dict(payload["model_config"])
+    config_values.pop("iterated_one_step", None)
+    config = TransportModelConfig(**config_values)
     if config.transport_role not in {
         "action_h0",
         "action_hm",

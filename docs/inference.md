@@ -12,36 +12,43 @@
    HY-WM1.5 uses the predicted direct Euler state.
 7. Resume the untouched backbone for its ordinary `K-r` solver calls.
 
-No gate or fallback decision is made.
-
 ## HY-WM1.5
 
-`cst.backends.hyworld15.OfficialHYWorldPlayCSTHook` temporarily wraps the
-official pipeline's `ar_rollout` method and restores it on exit. The current
-CLI exposes the verified **CST-R** on-policy path:
+`cst.backends.hyworld15_inference.OfficialHYWorldPlayInferenceHook` temporarily
+wraps the official pipeline's `ar_rollout` method and restores it on exit. It
+supports both checkpoint roles:
 
 ```bash
-actionsplice-capture-hyworld15 \
-  --mode cst_r \
+actionsplice-infer-hyworld15 \
+  --method cst_r \
+  --task-config configs/inference/hyworld15_cst_r.example.json \
   --hyworld-root /path/to/HY-WorldPlay \
   --model-path /path/to/HunyuanVideo-1.5 \
   --action-checkpoint /path/to/action/checkpoint.safetensors \
   --transport-checkpoint checkpoints/hyworld15-cst-r/best.pt \
-  --task-manifest /path/to/cst-r-task-manifest.json \
-  --output-dir outputs/hyworld15-cst-r-inference
+  --reference-image /path/to/reference.png \
+  --output outputs/hyworld15-cst-r.mp4
 ```
 
 The loader validates that the checkpoint uses the HY direct-state target.
-CST-T teacher-prefix capture exists in this backend, but its on-policy
-generation hook is still a release blocker and is not claimed as runnable.
+For CST-T, select `--method cst_t` and use the CST-T example configuration;
+the configured boundary creates the hard suffix mask.
 
 ## minWM
 
-The verified minWM pipeline loader and action hook are in
-`cst.backends.minwm_wan`. Its CST runtime uses
-`cst.core.runtime.apply_transport_model`, passing the scheduler, denoising-step
-list, and stored transition-noise bank required for exact same-step re-noising.
+The minWM runner is `cst.backends.minwm_inference.run_minwm_cst`. It passes the
+scheduler, denoising-step list, and stored transition-noise bank required for
+exact same-step re-noising:
 
-A single cross-backend generation CLI is intentionally not claimed yet; the
-two upstream repositories install conflicting `hyvideo` packages. The shared
-registry and runtime are stable while pipeline launch remains backend-specific.
+```bash
+actionsplice-infer-minwm \
+  --method cst_t \
+  --task-config configs/inference/minwm_cst_t.example.json \
+  --minwm-root /path/to/minWM \
+  --transport-checkpoint checkpoints/minwm-cst-t/best.pt \
+  --output outputs/minwm-cst-t.mp4
+```
+
+The two entry points remain separate because the upstream repositories install
+conflicting top-level packages. Each command also writes a JSON file beside
+the video with checkpoint metadata, event timings, and post-request NFE counts.

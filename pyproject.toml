@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,23 +7,22 @@ name = "actionsplice"
 version = "0.1.0"
 description = "ActionSplice: same-step state editing for interruptible world models"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24",
     "torch>=2.4",
 ]
-classifiers = [
-    "License :: OSI Approved :: Apache Software License",
-]
-
 [project.optional-dependencies]
 train = [
     "lpips>=0.1.4",
     "wandb>=0.17",
 ]
-demo = [
-    "gradio>=5",
+inference = [
+    "imageio[ffmpeg]>=2.34",
+    "omegaconf>=2.3",
+    "torchvision>=0.19",
 ]
 dev = [
     "pytest>=8",
@@ -35,8 +34,10 @@ actionsplice-train = "cst.training.train:main"
 actionsplice-capture-hyworld15 = "cst.cli.capture_hyworld15_paper:main"
 actionsplice-capture-hyworld15-bootstrap = "cst.cli.capture_hyworld15:main"
 actionsplice-capture-minwm = "cst.cli.capture_minwm:main"
+actionsplice-capture-minwm-recurrent = "cst.cli.capture_minwm_recurrent:main"
 actionsplice-export-hyworld15-manifests = "cst.cli.export_hyworld15_manifests:main"
-actionsplice-baselines-hyworld15 = "cst.cli.baselines_hyworld15:main"
+actionsplice-infer-minwm = "cst.cli.infer_minwm:main"
+actionsplice-infer-hyworld15 = "cst.cli.infer_hyworld15:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

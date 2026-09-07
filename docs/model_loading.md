@@ -1,10 +1,8 @@
 # Model loading
 
-## Status
-
-CST-R and CST-T weights are not public yet. Edit a copy of
-`configs/models/models.example.json` when the Hugging Face repositories are
-created. Do not commit private cluster paths or unpublished repository IDs.
+CST-R and CST-T weights are not included in this repository. Supply a local
+checkpoint path and load upstream backbone weights separately under their
+original licenses.
 
 ## Local checkpoint
 
@@ -28,20 +26,4 @@ method = get_backend("hyworld15").validate_checkpoint_config(
 print(method)  # cst_t
 ```
 
-The returned checkpoint contains only the small CST corrector. Load upstream
-backbone weights separately under their original licenses.
-
-## Future Hugging Face download
-
-After release, set the four repository variables used by the script:
-
-```bash
-export ACTIONSPLICE_MINWM_CST_R_REPO='<HF_ORG>/<REPO>'
-export ACTIONSPLICE_MINWM_CST_T_REPO='<HF_ORG>/<REPO>'
-export ACTIONSPLICE_HY_CST_R_REPO='<HF_ORG>/<REPO>'
-export ACTIONSPLICE_HY_CST_T_REPO='<HF_ORG>/<REPO>'
-bash scripts/download_weights.sh checkpoints
-```
-
-Until all variables are real repository IDs, the script exits without making
-network requests.
+The returned checkpoint contains only the small CST corrector.

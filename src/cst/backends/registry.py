@@ -41,10 +41,9 @@ def get_backend(name: str) -> BackendSpec:
         "hywm15": "hyworld15",
         "hyworld15": "hyworld15",
     }
-    try:
-        return BACKENDS[aliases[normalized]]
-    except KeyError as error:
-        raise ValueError(f"Unknown backend {name!r}; choose from {sorted(BACKENDS)}") from error
+    if normalized not in aliases:
+        raise ValueError(f"Unknown backend {name!r}; choose from {sorted(BACKENDS)}")
+    return BACKENDS[aliases[normalized]]
 
 
 def validate_training_config(config: Mapping[str, Any]) -> tuple[BackendSpec, CSTMethod]:
@@ -61,7 +60,7 @@ def validate_training_config(config: Mapping[str, Any]) -> tuple[BackendSpec, CS
         "rollout_teacher_forcing_end_probability",
     }.intersection(config)
     if obsolete:
-        raise ValueError(f"Obsolete multi-horizon training options: {sorted(obsolete)}")
+        raise ValueError(f"Unsupported legacy training options: {sorted(obsolete)}")
     if "backend" not in config or "method" not in config:
         raise ValueError("Public training configs require 'backend' and 'method'")
     backend = get_backend(str(config["backend"]))

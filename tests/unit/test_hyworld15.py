@@ -1,13 +1,13 @@
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 import torch
 
-from cst.backends.hyworld15_baselines import run_hyworld15_interruption_baseline
-from cst.cli.baselines_hyworld15 import (
-    _condition_from_commands,
-    load_baseline_task,
-)
+from cst.backends.hyworld15 import capture_hyworld15_recurrent_sequence
+from cst.backends.hyworld15_inference import run_hyworld15_cst
+from cst.cli._hyworld15_io import condition_from_commands
+from cst.data.inference import load_inference_task
 
 
 class _Scheduler:
@@ -56,38 +56,48 @@ class _Pipeline:
         self._kv_cache_neg = [dict(empty)]
 
 
-class HYWorld15BaselineTests(unittest.TestCase):
+class _Corrector:
+    def __init__(self, role: str) -> None:
+        self.config = SimpleNamespace(
+            transport_role=role,
+            target_parameterization="state",
+            latent_channels=32,
+            denoising_steps=4,
+            max_jump_horizon=0,
+            max_rollout_age=3 if role == "action_h0_state" else 0,
+        )
+
+    def __call__(self, **inputs):
+        active = inputs["active_state"]
+        delta = torch.full_like(active, 0.01)
+        mask = inputs.get("temporal_suffix_mask")
+        if mask is not None:
+            delta = delta * mask
+        corrected = active + delta
+        return {
+            "predicted_target": corrected,
+            "corrected_state": corrected,
+            "delta": delta,
+        }
+
+
+class HYWorld15InferenceTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(__file__).resolve().parents[2]
-        self.config = self.root / "configs/hyworld15/baselines.json"
+        self.config = self.root / "configs/inference/hyworld15_cst_r.example.json"
 
-    def test_config_has_exact_one_to_four_interruption_schedules(self):
-        for count in range(1, 5):
-            task = load_baseline_task(self.config, interruptions=count)
-            self.assertEqual(len(task["event_pose_indices"]), count)
-            self.assertGreater(task["num_latent_frames"], task["event_pose_indices"][-1] + 4)
-            self.assertTrue(
-                all(
-                    right - left >= 8
-                    for left, right in zip(
-                        task["event_pose_indices"],
-                        task["event_pose_indices"][1:],
-                    )
-                )
-            )
-
-    def test_full_rollback_discards_prefix_while_wait_delays_response(self):
-        task = load_baseline_task(self.config, interruptions=1)
+    def test_inference_only_cst_r_and_cst_t_resume_at_same_step(self):
+        task = load_inference_task(self.config, method="cst_r")
         frame_count = int(task["num_latent_frames"])
         torch.manual_seed(7)
         noise = torch.randn(1, 32, frame_count, 2, 2)
-        requested = _condition_from_commands(task["requested_commands"])
-        wait_condition = _condition_from_commands(task["wait_commands"])
+        requested = condition_from_commands(task["requested_commands"])
         stale = {
-            int(event): _condition_from_commands(commands)
+            int(event): condition_from_commands(commands)
             for event, commands in task["stale_commands_by_event"].items()
         }
         common = dict(
+            pipeline=_Pipeline(),
             latents=noise,
             timesteps=torch.tensor([4.0, 3.0, 2.0, 1.0]),
             prompt_embeds=torch.zeros(1, 1, 1),
@@ -100,47 +110,60 @@ class HYWorld15BaselineTests(unittest.TestCase):
                 "byt5_text_mask": torch.ones(1, 1),
             },
             requested_condition=requested,
-            wait_condition=wait_condition,
             stale_conditions_by_event=stale,
             event_pose_indices=task["event_pose_indices"],
-            runtime_receipt_steps=[2],
+            receipt_steps=[2],
             history_selector=lambda _poses, start, **_kwargs: list(range(max(0, start - 4), start)),
         )
-        rollback = run_hyworld15_interruption_baseline(
-            pipeline=_Pipeline(),
-            policy="full_rollback",
+        cst_r = run_hyworld15_cst(
+            corrector=_Corrector("action_h0_state"),
             **common,
         )
-        wait = run_hyworld15_interruption_baseline(
-            pipeline=_Pipeline(),
-            policy="wait",
+        cst_t = run_hyworld15_cst(
+            corrector=_Corrector("action_hm_state"),
+            intra_chunk_offsets_by_event={task["event_pose_indices"][0]: 2},
             **common,
         )
+        for result in (cst_r, cst_t):
+            self.assertEqual(result.metrics["generator_call_count"], 16)
+            event = result.metrics["interruption_events"][0]
+            self.assertEqual(event["post_request_backbone_nfe"], 2)
+            self.assertEqual(event["continuation_semantics"], "same_step_correct_then_resume")
 
-        self.assertEqual(rollback.metrics["generator_call_count"], 22)
-        self.assertEqual(rollback.metrics["discarded_nfe"], 2)
-        rollback_event = rollback.metrics["interruption_events"][0]
-        self.assertEqual(rollback_event["post_request_nfe_to_response"], 4)
-        self.assertEqual(
-            rollback_event["response_chunk_start_frame"],
-            rollback_event["event_pose_index"],
-        )
-
-        self.assertEqual(wait.metrics["generator_call_count"], 20)
-        self.assertEqual(wait.metrics["discarded_nfe"], 0)
-        wait_event = wait.metrics["interruption_events"][0]
-        self.assertEqual(wait_event["post_request_nfe_to_response"], 6)
-        self.assertEqual(
-            wait_event["response_chunk_start_frame"],
-            wait_event["event_pose_index"] + 4,
-        )
+    def test_recurrent_cst_t_capture_uses_masked_student_cleanup(self):
+        task = load_inference_task(self.config, method="cst_r")
+        frame_count = int(task["num_latent_frames"])
+        requested = condition_from_commands(task["requested_commands"])
+        stale = {
+            int(event): condition_from_commands(commands)
+            for event, commands in task["stale_commands_by_event"].items()
+        }
         event = int(task["event_pose_indices"][0])
-        self.assertFalse(
-            torch.equal(
-                rollback.output[:, :, event : event + 4],
-                wait.output[:, :, event : event + 4],
-            )
+        result = capture_hyworld15_recurrent_sequence(
+            pipeline=_Pipeline(),
+            latents=torch.randn(1, 32, frame_count, 2, 2),
+            timesteps=torch.tensor([4.0, 3.0, 2.0, 1.0]),
+            prompt_embeds=torch.zeros(1, 1, 1),
+            prompt_mask=torch.ones(1, 1),
+            vision_states=torch.zeros(1, 1, 1),
+            cond_latents=torch.zeros(1, 33, frame_count, 2, 2),
+            task_type="i2v",
+            extra_kwargs={
+                "byt5_text_states": torch.zeros(1, 1, 1),
+                "byt5_text_mask": torch.ones(1, 1),
+            },
+            requested_condition=requested,
+            stale_conditions_by_event=stale,
+            event_pose_indices=[event],
+            runtime_receipt_steps=[2],
+            transport_model=_Corrector("action_hm_state"),
+            intra_chunk_offsets_by_event={event: 2},
+            history_selector=lambda _poses, start, **_kwargs: list(range(max(0, start - 4), start)),
         )
+        self.assertEqual(result.metrics["correction_count"], 1)
+        self.assertEqual(len(result.captures), 1)
+        self.assertEqual(result.captures[0].metadata["student_policy"], "cst_t")
+        self.assertTrue(result.captures[0].metadata["teacher_prefix_clamped"])
 
 
 if __name__ == "__main__":

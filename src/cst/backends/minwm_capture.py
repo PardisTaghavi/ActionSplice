@@ -46,9 +46,7 @@ def capture_transport_pair(
     import torch
 
     if pipeline.independent_first_frame:
-        raise ValueError(
-            "Transport capture currently requires independent_first_frame=False"
-        )
+        raise ValueError("Transport capture currently requires independent_first_frame=False")
     batch_size, num_frames, _, _, _ = noise.shape
     chunk_size = int(pipeline.num_frame_per_block)
     denoising_steps = len(pipeline.denoising_step_list)
@@ -68,9 +66,7 @@ def capture_transport_pair(
         ("intrinsics", intrinsics),
     ):
         if int(tensor.shape[0]) != batch_size or int(tensor.shape[1]) < num_frames:
-            raise ValueError(
-                f"{name} must cover batch={batch_size}, frames={num_frames}"
-            )
+            raise ValueError(f"{name} must cover batch={batch_size}, frames={num_frames}")
 
     conditional_dict = pipeline.text_encoder(text_prompts=[text_prompt])
     _reset_pipeline_caches(pipeline, noise)
@@ -129,9 +125,7 @@ def capture_transport_pair(
                 "frame_count": int(active.shape[1]),
                 "denoise_step_index": step_index,
                 "phase": (
-                    "context_update"
-                    if step_index is None
-                    else f"{branch}_denoise_{step_index + 1}"
+                    "context_update" if step_index is None else f"{branch}_denoise_{step_index + 1}"
                 ),
                 "elapsed_ms": (ended - started) * 1000.0,
                 "cache_indices_before": before,
@@ -141,9 +135,7 @@ def capture_transport_pair(
         return result
 
     def transition_noise_bank(active: Any) -> list[Any]:
-        return [
-            torch.randn_like(active.flatten(0, 1)) for _ in range(denoising_steps - 1)
-        ]
+        return [torch.randn_like(active.flatten(0, 1)) for _ in range(denoising_steps - 1)]
 
     def add_transition_noise(
         prediction: Any,
@@ -284,10 +276,7 @@ def capture_transport_pair(
         "old_predictions": torch.stack(old_predictions, dim=0),
         "new_predictions": torch.stack(new_predictions, dim=0),
         "transition_noises": torch.stack(
-            [
-                value.unflatten(0, initial_active.shape[:2])
-                for value in event_transition_noises
-            ],
+            [value.unflatten(0, initial_active.shape[:2]) for value in event_transition_noises],
             dim=0,
         ),
         "history_tail": history_tail,
@@ -328,9 +317,7 @@ def capture_transport_pair(
         "shared_prefix_generator_calls": sum(
             event["branch"] == "shared_prefix" for event in events
         ),
-        "event_generator_calls": sum(
-            event["branch"] in {"old", "new"} for event in events
-        ),
+        "event_generator_calls": sum(event["branch"] in {"old", "new"} for event in events),
         "generator_elapsed_ms": sum(float(event["elapsed_ms"]) for event in events),
         "events": events,
         "cache_overwrite_validation": (
@@ -397,8 +384,6 @@ def save_transport_capture(path: Path, capture: TransportCapture) -> None:
     payload = {
         "schema_version": SCHEMA_VERSION,
         "metadata": capture.metadata,
-        "tensors": {
-            name: tensor.detach().cpu() for name, tensor in capture.tensors.items()
-        },
+        "tensors": {name: tensor.detach().cpu() for name, tensor in capture.tensors.items()},
     }
     torch.save(payload, path)

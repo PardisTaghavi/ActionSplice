@@ -19,18 +19,12 @@ def build_transport_capture_tasks(config_path: Path) -> list[dict[str, Any]]:
     event_pose_index = int(config["event_pose_index"])
     multiple_offset_config = "intra_chunk_offsets" in config
     if multiple_offset_config:
-        intra_chunk_offsets = tuple(
-            int(value) for value in config["intra_chunk_offsets"]
-        )
+        intra_chunk_offsets = tuple(int(value) for value in config["intra_chunk_offsets"])
         if "intra_chunk_offset" in config:
-            raise ValueError(
-                "Specify either intra_chunk_offset or intra_chunk_offsets, not both"
-            )
+            raise ValueError("Specify either intra_chunk_offset or intra_chunk_offsets, not both")
     else:
         intra_chunk_offsets = (int(config.get("intra_chunk_offset", 0)),)
-    if not intra_chunk_offsets or len(set(intra_chunk_offsets)) != len(
-        intra_chunk_offsets
-    ):
+    if not intra_chunk_offsets or len(set(intra_chunk_offsets)) != len(intra_chunk_offsets):
         raise ValueError("intra_chunk_offsets must be nonempty and unique")
     denoising_steps = int(config["denoising_steps"])
     scenario_assignment = str(config.get("scenario_assignment", "cross_product"))
@@ -48,9 +42,7 @@ def build_transport_capture_tasks(config_path: Path) -> list[dict[str, Any]]:
         raise ValueError("event_pose_index must be a chunk boundary")
     for intra_chunk_offset in intra_chunk_offsets:
         if intra_chunk_offset and not 0 < intra_chunk_offset < chunk_size:
-            raise ValueError(
-                "Every intra_chunk_offset must select a nonempty chunk suffix"
-            )
+            raise ValueError("Every intra_chunk_offset must select a nonempty chunk suffix")
 
     tasks: list[dict[str, Any]] = []
     for prompt_index, prompt in enumerate(prompts):
@@ -84,11 +76,7 @@ def build_transport_capture_tasks(config_path: Path) -> list[dict[str, Any]]:
                         ]
                     )
                     digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:10]
-                    offset_tag = (
-                        f"__m{intra_chunk_offset}"
-                        if multiple_offset_config
-                        else ""
-                    )
+                    offset_tag = f"__m{intra_chunk_offset}" if multiple_offset_config else ""
                     capture_id = (
                         f"{prompt_key}__s{effective_seed:03d}__{scenario_name}"
                         f"{offset_tag}__transport__{digest}"
@@ -100,18 +88,14 @@ def build_transport_capture_tasks(config_path: Path) -> list[dict[str, Any]]:
                             "prompt": prompt,
                             "master_id": f"cst-paper-p{prompt_index:03d}",
                             "dataset_split": (
-                                "train"
-                                if prompt_index < train_prompt_count
-                                else "heldout"
+                                "train" if prompt_index < train_prompt_count else "heldout"
                             ),
                             "seed": effective_seed,
                             "prompt_seed_stride": prompt_seed_stride,
                             "scenario_assignment": scenario_assignment,
                             "scenario": scenario_name,
                             "scenario_description": scenario.description,
-                            "analysis_scope": (
-                                "stress" if scenario.is_stress else "primary"
-                            ),
+                            "analysis_scope": ("stress" if scenario.is_stress else "primary"),
                             "old_action": scenario.old_action,
                             "new_action": scenario.new_action,
                             "event_pose_index": event_pose_index,

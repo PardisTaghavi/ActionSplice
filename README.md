@@ -14,10 +14,8 @@ and lets the original backbone finish its normal denoising trajectory.
 - [Installation](#installation)
 - [Training](#training)
 - [Inference and model loading](#inference-and-model-loading)
-- [Demo](#demo)
 - [Repository structure](#repository-structure)
 - [Development](#development)
-- [Release roadmap](#release-roadmap)
 
 ## Method
 
@@ -57,7 +55,7 @@ Optional dependencies are grouped by workflow:
 
 ```bash
 python -m pip install -e '.[train]'
-python -m pip install -e '.[demo]'
+python -m pip install -e '.[inference]'
 ```
 
 ### Upstream backbones
@@ -113,10 +111,8 @@ examples are documented in [docs/training.md](docs/training.md).
 
 ## Inference and model loading
 
-Corrector weights are **not public yet**. The repository contains no backbone
-or corrector checkpoints. Placeholder Hugging Face IDs are kept in
-`configs/models/models.example.json`, and `scripts/download_weights.sh` exits
-until real repositories are configured.
+The repository contains no backbone or corrector checkpoints. Use a local
+checkpoint path with the commands below.
 
 Local corrector checkpoints can be loaded independently of the backbone:
 
@@ -137,22 +133,30 @@ corrector, metadata = load_transport_model(
 The loader validates backend target type and checkpoint role. Load the
 upstream backbone separately under its original license.
 
-- [Inference sequence and current hooks](docs/inference.md)
-- [Checkpoint validation and future HF loading](docs/model_loading.md)
-
-## Demo
-
-The lightweight Gradio demo uses precomputed videos, so it can run without
-shipping world-model or corrector weights:
+Backend-specific commands run both variants end to end from a small rollout
+configuration:
 
 ```bash
-python -m pip install -e '.[demo]'
-python demo/app.py
+actionsplice-infer-minwm \
+  --method cst_r \
+  --task-config configs/inference/minwm_cst_r.example.json \
+  --minwm-root /path/to/minWM \
+  --transport-checkpoint /path/to/minwm-cst-r.pt \
+  --output outputs/minwm-cst-r.mp4
+
+actionsplice-infer-hyworld15 \
+  --method cst_t \
+  --task-config configs/inference/hyworld15_cst_t.example.json \
+  --reference-image /path/to/reference.png \
+  --hyworld-root /path/to/HY-WorldPlay \
+  --model-path /path/to/HunyuanVideo-1.5 \
+  --action-checkpoint /path/to/action/checkpoint.safetensors \
+  --transport-checkpoint /path/to/hyworld15-cst-t.pt \
+  --output outputs/hyworld15-cst-t.mp4
 ```
 
-Add redistributable examples under `demo/examples/` and register them in
-`demo/examples/manifest.json`. The same directory is structured to become a
-Hugging Face Space.
+- [Inference sequence and current hooks](docs/inference.md)
+- [Checkpoint validation](docs/model_loading.md)
 
 ## Repository structure
 
@@ -163,14 +167,13 @@ ActionSplice/
 │   ├── core/           corrector model, state layouts, same-step runtime
 │   ├── data/           capture schemas, datasets, partitions, manifests
 │   ├── training/       shared corrector training loop and losses
-│   └── cli/            capture, manifest, training, and evaluation commands
+│   └── cli/            capture, manifest, training, and inference commands
 ├── configs/
 │   ├── minwm/          minWM CST-R/CST-T capture and training configs
 │   ├── hyworld15/      HY CST-R/CST-T capture and training configs
-│   └── models/         unpublished-weight placeholders
-├── demo/               precomputed-video Gradio/HF Space scaffold
+│   └── inference/      runnable single-rollout CST-R/CST-T examples
 ├── docs/               architecture, training, inference, model loading
-├── scripts/            upstream setup and future weight download helpers
+├── scripts/            pinned upstream setup
 └── tests/               CPU unit tests
 ```
 
@@ -204,23 +207,6 @@ pytest
 Generated captures, checkpoints, outputs, upstream repositories, and W&B
 artifacts are excluded by `.gitignore`. Do not commit private cluster paths,
 unpublished model IDs, or third-party weights.
-
-## Release roadmap
-
-- Migrate recurrent on-policy minWM CST-R capture.
-- Add minWM CST-R and CST-T generation hooks.
-- Add the HY-WM1.5 CST-T on-policy suffix-mask hook.
-- Run GPU integration tests against both pinned upstream revisions.
-- Publish the four CST corrector checkpoints and model cards on Hugging Face.
-- Populate and publish the precomputed Hugging Face Space.
-- Add redistributable qualitative examples, paper citation, and final results.
-- Complete provenance review for migrated source modules.
-
-The detailed checklist lives in [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
-
-## Citation
-
-The paper citation will be added when the public preprint is available.
 
 ## License
 

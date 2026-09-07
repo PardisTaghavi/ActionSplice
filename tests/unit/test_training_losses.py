@@ -1,8 +1,15 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import torch
 
-from cst.training.train import _resolve_loss_weights, _training_losses
+from cst.core.model import CounterfactualTransport, TransportModelConfig
+from cst.training.train import (
+    _initialize_from_checkpoint,
+    _resolve_loss_weights,
+    _training_losses,
+)
 
 
 class TrainingLossTests(unittest.TestCase):
@@ -94,6 +101,53 @@ class TrainingLossTests(unittest.TestCase):
                     "loss_weights": {"lambda_mid": 0.1},
                 }
             )
+
+    def test_cst_t_can_initialize_from_cst_r_pilot(self) -> None:
+        source = CounterfactualTransport(
+            TransportModelConfig(
+                latent_channels=2,
+                denoising_steps=4,
+                base_channels=4,
+                condition_channels=8,
+                max_rollout_age=3,
+                transport_role="action_h0_state",
+                target_parameterization="state",
+            )
+        )
+        with torch.no_grad():
+            source.stem.weight.fill_(0.25)
+        target = CounterfactualTransport(
+            TransportModelConfig(
+                latent_channels=2,
+                denoising_steps=4,
+                base_channels=4,
+                condition_channels=8,
+                transport_role="action_hm_state",
+                target_parameterization="state",
+                use_temporal_suffix_mask=True,
+            )
+        )
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "pilot.pt"
+            torch.save(
+                {
+                    "model_config": source.config.to_dict(),
+                    "model": source.state_dict(),
+                },
+                path,
+            )
+            _initialize_from_checkpoint(target, path, torch=torch)
+        source_channels = source.stem.weight.shape[1]
+        self.assertTrue(
+            torch.equal(
+                target.stem.weight[:, :source_channels],
+                source.stem.weight,
+            )
+        )
+        self.assertEqual(
+            float(target.stem.weight[:, source_channels:].detach().abs().sum()),
+            0.0,
+        )
 
 
 if __name__ == "__main__":

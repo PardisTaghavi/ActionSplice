@@ -17,5 +17,6 @@ class ActionScheduleTests(unittest.TestCase):
         self.assertEqual(desired[7], "s")
         self.assertEqual(len(commands_to_viewmats(desired)), 20)
 
+
 if __name__ == "__main__":
     unittest.main()

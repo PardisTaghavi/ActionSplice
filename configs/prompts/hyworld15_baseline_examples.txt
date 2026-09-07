@@ -1,1 +1,0 @@
-First-person exploration of a detailed outdoor environment, photorealistic, stable natural lighting, continuous geometry, smooth camera motion.

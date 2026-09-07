@@ -29,6 +29,7 @@
   "target_branch": "new",
   "use_cached_prediction": true,
   "target_parameterization": "clean_prediction",
+  "initialize_model_checkpoint": "<PATH_TO_MINWM_CST_T_PILOT>",
   "loss_weights": {
     "lambda_state": 1.0,
     "lambda_residual": 1.0,

@@ -8,7 +8,6 @@ import math
 import os
 import sys
 import time
-import warnings
 from copy import deepcopy
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -62,9 +61,7 @@ def _resolve_loss_weights(config: dict[str, Any]) -> LossWeights:
     for name, default in defaults.items():
         legacy_name = _LEGACY_LOSS_KEYS.get(name)
         if name in configured and legacy_name is not None and legacy_name in config:
-            raise ValueError(
-                f"Specify loss_weights.{name} or legacy {legacy_name}, not both"
-            )
+            raise ValueError(f"Specify loss_weights.{name} or legacy {legacy_name}, not both")
         value = (
             configured[name]
             if name in configured
@@ -98,85 +95,33 @@ class _MetricLogger:
         run_name: str,
     ) -> None:
         self.path = output_dir / "metrics.jsonl"
-        self.wandb_status_path = output_dir / "wandb_status.json"
         self.wandb_run: Any | None = None
-        self._wandb_log_failed = False
         project = os.environ.get("WANDB_PROJECT") or config.get("wandb_project")
         if project:
-            try:
-                import wandb
-            except ImportError as error:
-                self._write_wandb_status("disabled", error)
-                warnings.warn(
-                    f"W&B is unavailable; continuing with metrics.jsonl: {error}",
-                    stacklevel=2,
-                )
-                return
-            try:
-                self.wandb_run = wandb.init(
-                    project=str(project),
-                    entity=os.environ.get("WANDB_ENTITY") or config.get("wandb_entity"),
-                    name=os.environ.get("WANDB_RUN_NAME") or run_name,
-                    mode=os.environ.get("WANDB_MODE", "online"),
-                    dir=str(output_dir),
-                    config=config,
-                    resume="allow",
-                    settings=wandb.Settings(
-                        init_timeout=float(os.environ.get("WANDB_INIT_TIMEOUT", "30"))
-                    ),
-                )
-            except Exception as error:  # W&B must never abort training.
-                self._write_wandb_status("initialization_failed", error)
-                warnings.warn(
-                    f"W&B initialization failed; continuing with metrics.jsonl: {error}",
-                    stacklevel=2,
-                )
-                self.wandb_run = None
-            else:
-                self._write_wandb_status("active")
+            import wandb
 
-    def _write_wandb_status(
-        self,
-        status: str,
-        error: Exception | None = None,
-    ) -> None:
-        payload = {
-            "status": status,
-            "mode": os.environ.get("WANDB_MODE", "online"),
-        }
-        if error is not None:
-            payload["error"] = f"{type(error).__name__}: {error}"
-        self.wandb_status_path.write_text(
-            json.dumps(payload, indent=2) + "\n",
-            encoding="utf-8",
-        )
+            self.wandb_run = wandb.init(
+                project=str(project),
+                entity=os.environ.get("WANDB_ENTITY") or config.get("wandb_entity"),
+                name=os.environ.get("WANDB_RUN_NAME") or run_name,
+                mode=os.environ.get("WANDB_MODE", "online"),
+                dir=str(output_dir),
+                config=config,
+                resume="allow",
+                settings=wandb.Settings(
+                    init_timeout=float(os.environ.get("WANDB_INIT_TIMEOUT", "30"))
+                ),
+            )
 
     def log(self, record: dict[str, Any], *, step: int) -> None:
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record) + "\n")
         if self.wandb_run is not None:
-            try:
-                self.wandb_run.log(record, step=step)
-            except Exception as error:  # Preserve training on telemetry failure.
-                if not self._wandb_log_failed:
-                    warnings.warn(
-                        f"W&B logging failed; continuing with metrics.jsonl: {error}",
-                        stacklevel=2,
-                    )
-                    self._wandb_log_failed = True
-                self._write_wandb_status("logging_failed", error)
-                self.wandb_run = None
+            self.wandb_run.log(record, step=step)
 
     def finish(self) -> None:
         if self.wandb_run is not None:
-            try:
-                self.wandb_run.finish()
-            except Exception as error:  # Metrics are already durable in JSONL.
-                self._write_wandb_status("finish_failed", error)
-                warnings.warn(
-                    f"W&B finish failed: {error}",
-                    stacklevel=2,
-                )
+            self.wandb_run.finish()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -221,6 +166,12 @@ def _load_config(path: Path) -> dict[str, Any]:
     if missing:
         raise ValueError(f"Training config is missing: {missing}")
     return config
+
+
+def _atomic_torch_save(payload: dict[str, Any], path: Path, *, torch: Any) -> None:
+    temporary = path.with_name(f".{path.name}.tmp")
+    torch.save(payload, temporary)
+    os.replace(temporary, path)
 
 
 def main() -> None:
@@ -454,12 +405,11 @@ def main() -> None:
     model = CounterfactualTransport(model_config).to(device)
     initialize_model_checkpoint = config.get("initialize_model_checkpoint")
     if initialize_model_checkpoint is not None:
-        initialization = torch.load(
+        _initialize_from_checkpoint(
+            model,
             Path(initialize_model_checkpoint),
-            map_location="cpu",
-            weights_only=False,
+            torch=torch,
         )
-        model.load_state_dict(initialization["model"], strict=True)
     _validate_primary_transport_configuration(
         model_config=model_config,
         jump_horizons=jump_horizons,
@@ -511,7 +461,12 @@ def main() -> None:
         if lr_scheduler is not None and payload.get("lr_scheduler") is not None:
             lr_scheduler.load_state_dict(payload["lr_scheduler"])
         step = int(payload.get("step", 0))
-        best_validation = float(payload.get("validation_nmse", math.inf))
+        best_validation = float(
+            payload.get("best_validation_nmse", payload.get("validation_nmse", math.inf))
+        )
+        best_validation_perceptual = float(
+            payload.get("best_validation_perceptual_weighted_loss", math.inf)
+        )
         if ema_model is not None and payload.get("ema_model") is not None:
             ema_model.load_state_dict(payload["ema_model"], strict=True)
 
@@ -541,6 +496,8 @@ def main() -> None:
         if lr_scheduler is not None:
             payload["lr_scheduler"] = lr_scheduler.state_dict()
         payload["loss_weights"] = loss_weights.to_dict()
+        payload["best_validation_nmse"] = best_validation
+        payload["best_validation_perceptual_weighted_loss"] = best_validation_perceptual
         return payload
 
     wall_started = time.perf_counter()
@@ -642,7 +599,11 @@ def main() -> None:
 
         validation_step = step == 1 or step % validation_interval == 0 or step == max_steps
         if step % checkpoint_interval == 0 and not validation_step:
-            torch.save(latest_checkpoint(best_validation), output_dir / "latest.pt")
+            _atomic_torch_save(
+                latest_checkpoint(best_validation),
+                output_dir / "latest.pt",
+                torch=torch,
+            )
 
         if validation_step:
             evaluation_model = ema_model if ema_model is not None else model
@@ -698,24 +659,32 @@ def main() -> None:
             history.append(record)
             metric_logger.log(record, step=step)
             print(json.dumps(record), flush=True)
-            latest = latest_checkpoint(validation_nmse)
-            torch.save(latest, output_dir / "latest.pt")
-            if validation_nmse < best_validation:
+            is_best = validation_nmse < best_validation
+            if is_best:
                 best_validation = validation_nmse
-                torch.save(latest, output_dir / "best.pt")
             validation_perceptual = validation_decoded_metrics.get(
                 "validation_decoded_perceptual_weighted_loss"
             )
             max_perceptual_checkpoint_nmse = float(
                 config.get("decoded_max_validation_nmse", math.inf)
             )
-            if (
+            is_best_perceptual = (
                 validation_perceptual is not None
                 and validation_nmse <= max_perceptual_checkpoint_nmse
                 and validation_perceptual < best_validation_perceptual
-            ):
+            )
+            if is_best_perceptual:
                 best_validation_perceptual = validation_perceptual
-                torch.save(latest, output_dir / "best_perceptual.pt")
+            latest = latest_checkpoint(validation_nmse)
+            _atomic_torch_save(latest, output_dir / "latest.pt", torch=torch)
+            if is_best:
+                _atomic_torch_save(latest, output_dir / "best.pt", torch=torch)
+            if is_best_perceptual:
+                _atomic_torch_save(
+                    latest,
+                    output_dir / "best_perceptual.pt",
+                    torch=torch,
+                )
 
     final_raw_validation: dict[str, Any] | None = None
     if ema_model is not None:
@@ -806,6 +775,73 @@ def main() -> None:
     )
     metric_logger.finish()
     print(json.dumps(summary, indent=2))
+
+
+def _initialize_from_checkpoint(model: Any, path: Path, *, torch: Any) -> None:
+    """Load a matching pilot, allowing only CST-R to CST-T mask expansion."""
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    if not isinstance(payload, dict) or "model" not in payload or "model_config" not in payload:
+        raise ValueError(f"Malformed initialization checkpoint: {path}")
+    source_config = payload["model_config"]
+    target_config = model.config.to_dict()
+    for field in (
+        "latent_channels",
+        "denoising_steps",
+        "base_channels",
+        "condition_channels",
+        "target_parameterization",
+        "use_cached_prediction",
+    ):
+        if source_config.get(field) != target_config.get(field):
+            raise ValueError(
+                f"Initialization checkpoint {field}={source_config.get(field)!r} "
+                f"does not match target {target_config.get(field)!r}"
+            )
+    source_role = str(source_config.get("transport_role", ""))
+    target_role = str(target_config["transport_role"])
+    allowed_roles = {
+        ("action_h0", "action_hm"),
+        ("action_h0_state", "action_hm_state"),
+    }
+    if source_role != target_role and (source_role, target_role) not in allowed_roles:
+        raise ValueError(f"Cannot initialize {target_role!r} from checkpoint role {source_role!r}")
+
+    source_state = payload["model"]
+    target_state = model.state_dict()
+    updated = dict(target_state)
+    missing = sorted(set(target_state) - set(source_state))
+    if missing:
+        raise ValueError(f"Initialization checkpoint lacks model keys: {missing[:3]}")
+    unexpected = sorted(
+        key
+        for key in set(source_state) - set(target_state)
+        if not key.startswith("rollout_age_embedding.")
+    )
+    if unexpected:
+        raise ValueError(f"Initialization checkpoint has unexpected keys: {unexpected[:3]}")
+
+    for name, target_value in target_state.items():
+        source_value = source_state[name]
+        if source_value.shape == target_value.shape:
+            updated[name] = source_value
+            continue
+        mask_expansion = (
+            name == "stem.weight"
+            and target_value.ndim == source_value.ndim == 5
+            and target_value.shape[0] == source_value.shape[0]
+            and target_value.shape[1] == source_value.shape[1] + 1
+            and target_value.shape[2:] == source_value.shape[2:]
+            and target_role in {"action_hm", "action_hm_state"}
+        )
+        if not mask_expansion:
+            raise ValueError(
+                f"Initialization shape mismatch for {name}: "
+                f"source={tuple(source_value.shape)} target={tuple(target_value.shape)}"
+            )
+        expanded = torch.zeros_like(target_value)
+        expanded[:, : source_value.shape[1]] = source_value
+        updated[name] = expanded
+    model.load_state_dict(updated, strict=True)
 
 
 def _model_inputs(batch: dict[str, Any]) -> dict[str, Any]:
@@ -1246,6 +1282,7 @@ def _masked_normalized_state_mse(
 ) -> Any:
     """Normalize state error using only the editable temporal suffix."""
     import torch
+
     if prediction.shape != target.shape:
         raise ValueError("Prediction and target shapes differ")
     if mask is None or mask.ndim != prediction.ndim:
@@ -1659,7 +1696,6 @@ def _benchmark(
         "min_ms": min(elapsed),
         "max_ms": max(elapsed),
     }
-
 
 
 if __name__ == "__main__":

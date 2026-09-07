@@ -185,8 +185,8 @@ class TransportPairDataset(Dataset[dict[str, Any]]):
         if not self.capture_paths:
             raise ValueError("TransportPairDataset requires at least one capture")
         self.jump_horizons = tuple(sorted({int(horizon) for horizon in jump_horizons}))
-        if not self.jump_horizons or self.jump_horizons[0] < 0:
-            raise ValueError("jump_horizons must contain nonnegative values")
+        if self.jump_horizons != (0,):
+            raise ValueError("ActionSplice datasets require same-step targets")
         self.receipt_steps = (
             None if receipt_steps is None else tuple(sorted({int(step) for step in receipt_steps}))
         )

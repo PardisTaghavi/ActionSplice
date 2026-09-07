@@ -87,6 +87,8 @@ def build_recurrent_capture_tasks(config_path: Path) -> list[dict[str, Any]]:
     if schedule_seed_stride < 0 or prompt_seed_stride < 0:
         raise ValueError("seed strides must be nonnegative")
     jump_horizon = int(config["runtime_jump_horizon"])
+    if jump_horizon != 0:
+        raise ValueError("ActionSplice recurrent capture requires same-step targets")
     h1_events_per_refresh = int(config.get("runtime_h1_events_per_refresh", 0))
     if h1_events_per_refresh < 0:
         raise ValueError("runtime_h1_events_per_refresh must be nonnegative")
@@ -100,7 +102,7 @@ def build_recurrent_capture_tasks(config_path: Path) -> list[dict[str, Any]]:
     if schedule_assignment == "cross_product" and len(schedule_lengths) != 1:
         raise ValueError("Every command schedule must have the same length")
     if not receipt_steps or any(
-        receipt <= 0 or receipt + jump_horizon >= denoising_steps for receipt in receipt_steps
+        receipt <= 0 or receipt >= denoising_steps for receipt in receipt_steps
     ):
         raise ValueError("Every recurrent receipt must leave one real DiT step")
     if "num_latent_frames" in config:

@@ -20,7 +20,6 @@ class TransportModelConfig:
     max_jump_horizon: int = 0
     use_cached_prediction: bool = False
     target_parameterization: str = "state"
-    iterated_one_step: bool = False
     endpoint_noise_exclusive: bool = False
     relative_pose_target_from_source: bool = False
     max_rollout_age: int = 0
@@ -212,9 +211,6 @@ class CounterfactualTransport(nn.Module):
             config.denoising_steps,
             condition,
         )
-        # Kept as an attribute so zero-horizon checkpoints retain their exact
-        # state-dict structure. CST-R/CST-T never create horizon weights.
-        self.horizon_embedding = None
         self.rollout_age_embedding = (
             nn.Embedding(config.max_rollout_age + 1, condition)
             if config.max_rollout_age > 0
@@ -291,8 +287,6 @@ class CounterfactualTransport(nn.Module):
             intrinsics,
         )
         condition = condition + self.receipt_embedding(receipt_step)
-        if self.horizon_embedding is not None:
-            condition = condition + self.horizon_embedding(jump_horizon)
         if self.rollout_age_embedding is not None:
             condition = condition + self.rollout_age_embedding(rollout_age)
         model_input = self._build_model_input(

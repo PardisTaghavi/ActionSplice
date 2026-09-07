@@ -40,14 +40,8 @@ def load_reference_pairs(
     if not isinstance(rows, list):
         raise ValueError("Reference manifest must be a list or contain examples")
     if len(rows) != len(prompts):
-        raise ValueError(
-            f"Expected {len(prompts)} reference rows, received {len(rows)}"
-        )
-    root = (
-        path.resolve().parent
-        if reference_root is None
-        else reference_root.resolve()
-    )
+        raise ValueError(f"Expected {len(prompts)} reference rows, received {len(rows)}")
+    root = path.resolve().parent if reference_root is None else reference_root.resolve()
     indexed: dict[int, dict[str, Any]] = {}
     for raw in rows:
         if not isinstance(raw, dict):
@@ -72,9 +66,7 @@ def load_reference_pairs(
         else:
             image_sha256 = str(raw.get("image_sha256", ""))
             if len(image_sha256) != 64:
-                raise ValueError(
-                    "Unchecked reference rows must provide image_sha256"
-                )
+                raise ValueError("Unchecked reference rows must provide image_sha256")
         indexed[prompt_index] = {
             "prompt_index": prompt_index,
             "prompt": prompts[prompt_index],
@@ -84,18 +76,14 @@ def load_reference_pairs(
         }
     if set(indexed) != set(range(len(prompts))):
         raise ValueError("Reference manifest must cover every prompt index exactly")
-    train_scenes = {
-        indexed[index]["scene_id"] for index in range(train_prompt_count)
-    }
+    train_scenes = {indexed[index]["scene_id"] for index in range(train_prompt_count)}
     heldout_scenes = {
-        indexed[index]["scene_id"]
-        for index in range(train_prompt_count, len(prompts))
+        indexed[index]["scene_id"] for index in range(train_prompt_count, len(prompts))
     }
     overlap = sorted(train_scenes & heldout_scenes)
     if overlap:
         raise ValueError(
-            "Reference scenes leak across train/held-out split: "
-            + ", ".join(overlap[:5])
+            "Reference scenes leak across train/held-out split: " + ", ".join(overlap[:5])
         )
     hashes = [indexed[index]["image_sha256"] for index in range(len(prompts))]
     if len(set(hashes)) != len(prompts):
@@ -127,23 +115,16 @@ def build_hyworld15_paper_manifests(
     cst_t = build_transport_capture_tasks(cst_t_config)
     if len(cst_r) != 150 or len(cst_t) != 450:
         raise ValueError(
-            f"Expected 150 CST-R tasks and 450 CST-T tasks; "
-            f"received {len(cst_r)} and {len(cst_t)}"
+            f"Expected 150 CST-R tasks and 450 CST-T tasks; received {len(cst_r)} and {len(cst_t)}"
         )
     prompts = [str(task["prompt"]) for task in cst_r]
     if len(set(int(task["prompt_index"]) for task in cst_r)) != 150:
         raise ValueError("CST-R manifest must contain one task per prompt")
     prompts = [
-        next(
-            str(task["prompt"])
-            for task in cst_r
-            if int(task["prompt_index"]) == index
-        )
+        next(str(task["prompt"]) for task in cst_r if int(task["prompt_index"]) == index)
         for index in range(150)
     ]
-    train_prompt_count = sum(
-        str(task["dataset_split"]) == "train" for task in cst_r
-    )
+    train_prompt_count = sum(str(task["dataset_split"]) == "train" for task in cst_r)
     if train_prompt_count != 120:
         raise ValueError("HY paper split must contain 120 training prompts")
     references = load_reference_pairs(
@@ -194,8 +175,7 @@ def build_hyworld15_paper_manifests(
                     "old_action": str(cst_t_tasks[0]["old_action"]),
                     "new_action": str(cst_t_tasks[0]["new_action"]),
                     "boundaries_m": sorted(
-                        int(value["intra_chunk_offset"])
-                        for value in cst_t_tasks
+                        int(value["intra_chunk_offset"]) for value in cst_t_tasks
                     ),
                     "receipt_steps_saved": [1, 2, 3],
                 },
@@ -205,12 +185,8 @@ def build_hyworld15_paper_manifests(
         "backbone": "official_hyworld15_action2v",
         "strategy": "fixed_prompt_and_scene_disjoint",
         "group_by": ["prompt", "scene_id"],
-        "train_master_ids": [
-            row["master_id"] for row in masters if row["split"] == "train"
-        ],
-        "heldout_master_ids": [
-            row["master_id"] for row in masters if row["split"] == "heldout"
-        ],
+        "train_master_ids": [row["master_id"] for row in masters if row["split"] == "train"],
+        "heldout_master_ids": [row["master_id"] for row in masters if row["split"] == "heldout"],
         "counts": {
             "masters": 150,
             "train_masters": 120,

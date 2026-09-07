@@ -30,6 +30,5 @@ inference configurations. Upstream imports stay lazy and backend-specific.
 | HY-WM1.5 | `[B,32,T,H,W]` | direct Euler state | none; deterministic resume |
 
 CST-R and CST-T use separately trained checkpoints. CST-T clamps the
-teacher prefix at every solver step during capture/training and applies the
-same hard suffix mask to the corrector output. There is no gate, horizon
-selection, solver-step skipping, or runtime fallback.
+teacher prefix at every solver step during capture and applies the same hard
+suffix mask to the corrector output.

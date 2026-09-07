@@ -1,4 +1,4 @@
-"""Build deterministic Phase-1 experiment tasks."""
+"""Build deterministic minWM action-interruption tasks."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def load_config(path: Path) -> dict[str, Any]:
         event_pose_index=int(config["event_pose_index"]),
     )
     if int(config["denoising_steps"]) != 4:
-        raise ValueError("Phase 1 currently targets minWM's four-step Action2V checkpoint")
+        raise ValueError("ActionSplice targets minWM's four-step Action2V checkpoint")
     return config
 
 

@@ -1,0 +1,4 @@
+-r base.txt
+imageio[ffmpeg]>=2.34
+omegaconf>=2.3
+torchvision>=0.19
