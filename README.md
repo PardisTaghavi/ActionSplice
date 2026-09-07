@@ -11,7 +11,6 @@ and lets the original backbone finish its normal denoising trajectory.
 ## Contents
 
 - [Method](#method)
-- [Implementation status](#implementation-status)
 - [Installation](#installation)
 - [Training](#training)
 - [Inference and model loading](#inference-and-model-loading)
@@ -38,22 +37,6 @@ ActionSplice provides two separately trained correctors:
 
 See [docs/architecture.md](docs/architecture.md) for the implementation
 boundary between CST and the upstream world models.
-
-## Implementation status
-
-Legend: ✅ available · 🟡 partial · ⛔ not yet wired
-
-| Backend and variant | Data capture | Training | End-to-end inference |
-|---|---:|---:|---:|
-| minWM CST-R | 🟡 Bootstrap capture available; final recurrent migration pending | ✅ | ⛔ |
-| minWM CST-T | ✅ Matched, prefix-clamped capture | ✅ | ⛔ |
-| HY-WM1.5 CST-R | ✅ Bootstrap and recurrent paper capture | ✅ | ✅ `OfficialHYWorldPlayCSTHook` |
-| HY-WM1.5 CST-T | ✅ Matched, prefix-clamped capture | ✅ | ⛔ |
-
-All four training configurations can train from prepared captures. Exact
-paper reproduction is not complete until recurrent on-policy minWM CST-R
-capture is migrated. The three missing generation hooks are tracked in the
-[release checklist](RELEASE_CHECKLIST.md).
 
 ## Installation
 
