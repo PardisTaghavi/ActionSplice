@@ -55,6 +55,23 @@ class BackendRegistryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_training_config(config)
 
+    def test_checkpoint_validation_rejects_backend_geometry(self) -> None:
+        config = {
+            "transport_role": "action_h0_state",
+            "target_parameterization": "state",
+            "use_temporal_suffix_mask": False,
+            "max_jump_horizon": 0,
+            "latent_channels": 16,
+            "denoising_steps": 4,
+        }
+        with self.assertRaisesRegex(ValueError, "requires 32 latent channels"):
+            get_backend("hyworld15").validate_checkpoint_config(config, method="cst_r")
+
+        config["latent_channels"] = 32
+        config["denoising_steps"] = 5
+        with self.assertRaisesRegex(ValueError, "requires 4 denoising steps"):
+            get_backend("hyworld15").validate_checkpoint_config(config, method="cst_r")
+
     def test_hy_paper_capture_configs_have_expected_counts(self) -> None:
         root = ROOT / "configs/hyworld15"
         self.assertEqual(len(build_recurrent_capture_tasks(root / "capture_cst_r.json")), 150)

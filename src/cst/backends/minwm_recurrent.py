@@ -38,9 +38,15 @@ def capture_recurrent_cst_r(
     if str(corrector.config.target_parameterization) != "clean_prediction":
         raise ValueError("minWM CST-R must predict the clean requested-action state")
 
+    if noise.ndim != 5:
+        raise ValueError("minWM noise must have shape [B,T,C,H,W]")
     batch_size, frame_count, _, _, _ = noise.shape
     chunk_size = int(pipeline.num_frame_per_block)
     denoising_steps = len(pipeline.denoising_step_list)
+    if int(corrector.config.latent_channels) != int(noise.shape[2]):
+        raise ValueError("Corrector latent channels do not match the minWM state")
+    if int(corrector.config.denoising_steps) != denoising_steps:
+        raise ValueError("Corrector and minWM denoising schedules differ")
     events = sorted({int(value) for value in event_pose_indices})
     legal_events = set(range(chunk_size, frame_count, chunk_size))
     if not events or not set(events).issubset(legal_events):

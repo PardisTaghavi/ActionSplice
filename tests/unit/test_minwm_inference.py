@@ -57,6 +57,8 @@ class _Corrector:
         self.config = SimpleNamespace(
             transport_role=role,
             target_parameterization="clean_prediction",
+            latent_channels=2,
+            denoising_steps=4,
             max_rollout_age=3 if role == "action_h0" else 0,
         )
 

@@ -60,6 +60,20 @@ class BackendSpec:
                 f"{self.display_name} requires target_parameterization="
                 f"{self.target_parameterization!r}, received {parameterization!r}"
             )
+        if "latent_channels" in model_config:
+            channels = int(model_config["latent_channels"])
+            if channels != self.state_spec.latent_channels:
+                raise ValueError(
+                    f"{self.display_name} requires {self.state_spec.latent_channels} "
+                    f"latent channels, received {channels}"
+                )
+        if "denoising_steps" in model_config:
+            steps = int(model_config["denoising_steps"])
+            if steps != self.state_spec.denoising_steps:
+                raise ValueError(
+                    f"{self.display_name} requires {self.state_spec.denoising_steps} "
+                    f"denoising steps, received {steps}"
+                )
         if int(model_config.get("max_jump_horizon", 0)) != 0:
             raise ValueError("CST-R/CST-T checkpoints must use the current solver step")
         masked = bool(model_config.get("use_temporal_suffix_mask", False))

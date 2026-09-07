@@ -49,6 +49,7 @@ actionsplice-infer-minwm \
   --output outputs/minwm-cst-t.mp4
 ```
 
-The two entry points remain separate because the upstream repositories install
-conflicting top-level packages. Each command also writes a JSON file beside
-the video with checkpoint metadata, event timings, and post-request NFE counts.
+The two entry points remain separate because the upstream backbones use
+independent dependency stacks and launch paths. Each command also writes a JSON
+file beside the video with checkpoint metadata, event timings, and post-request
+NFE counts.

@@ -28,10 +28,10 @@ ActionSplice provides two separately trained correctors:
 
 ### Backend state conventions
 
-| Backend | Canonical state | Corrector target | Same-step reconstruction |
-|---|---|---|---|
-| minWM Wan Action2V | `[B,T,16,H,W]` | Clean prediction | Stored transition noise |
-| HY-WM1.5 | `[B,32,T,H,W]` | Direct Euler state | None; deterministic resume |
+| Backend | Native state | Corrector input | Corrector target | Same-step reconstruction |
+|---|---|---|---|---|
+| minWM Wan Action2V | `[B,T,16,H,W]` | `[B,T,16,H,W]` | Clean prediction | Stored transition noise |
+| HY-WM1.5 | `[B,32,T,H,W]` | `[B,T,32,H,W]` | Direct Euler state | None; deterministic resume |
 
 ## Installation
 
@@ -58,15 +58,17 @@ python -m pip install -e '.[inference]'
 ### Upstream backbones
 
 ActionSplice integrates with upstream repositories rather than redistributing
-their code or weights. Prepare the pinned revisions with:
+their code or weights. Prepare pinned source checkouts with:
 
 ```bash
 bash scripts/prepare_backends.sh
 ```
 
 > [!NOTE]
-> minWM and HY-WorldPlay both install a top-level `hyvideo` package. Use a
-> separate Python environment for each backend.
+> minWM and HY-WorldPlay have independent dependency stacks. Use a separate
+> Python environment for each backend and install that upstream repository's
+> requirements there. ActionSplice's `inference` extra supplies only the shared
+> client-side dependencies.
 
 Pinned revisions and licensing notes are recorded in
 [THIRD_PARTY.md](THIRD_PARTY.md).
@@ -118,6 +120,7 @@ from pathlib import Path
 
 import torch
 
+from cst.backends import get_backend
 from cst.core.runtime import load_transport_model
 
 corrector, metadata = load_transport_model(
@@ -125,10 +128,14 @@ corrector, metadata = load_transport_model(
     device=torch.device("cuda"),
     dtype=torch.bfloat16,
 )
+get_backend("hyworld15").validate_checkpoint_config(
+    metadata["model_config"], method="cst_r"
+)
 ```
 
-The loader validates backend target type and checkpoint role. Load the
-upstream backbone separately under its original license.
+The loader validates checkpoint structure and role; the backend validation
+checks the target type, latent-channel count, solver length, and selected
+method. Load the upstream backbone separately under its original license.
 
 Backend-specific commands run both variants end to end from a small rollout
 configuration:

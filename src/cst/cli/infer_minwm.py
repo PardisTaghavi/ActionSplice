@@ -48,6 +48,8 @@ def main() -> None:
 
     task = load_inference_task(args.task_config, method=args.method)
     root = args.minwm_root.resolve()
+    transport_checkpoint = args.transport_checkpoint.resolve()
+    output = args.output.resolve()
     pipeline, model_config, _ = load_wan_pipeline(
         root,
         _resolve_under(root, args.minwm_config).resolve(),
@@ -62,7 +64,7 @@ def main() -> None:
     device = next(pipeline.generator.parameters()).device
     dtype = torch.bfloat16
     corrector, checkpoint_metadata = load_transport_model(
-        args.transport_checkpoint, device=device, dtype=dtype
+        transport_checkpoint, device=device, dtype=dtype
     )
     get_backend("minwm").validate_checkpoint_config(
         checkpoint_metadata["model_config"], method=args.method
@@ -104,7 +106,6 @@ def main() -> None:
     )
     if result.video is None:
         raise RuntimeError("minWM inference returned no decoded video")
-    output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     pixels = (
         result.video[0].permute(0, 2, 3, 1).mul(255.0).round().clamp(0, 255).to(torch.uint8).cpu()

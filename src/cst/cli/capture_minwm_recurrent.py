@@ -50,6 +50,7 @@ def main() -> None:
     from ..core.runtime import load_transport_model
 
     minwm_root = args.minwm_root.resolve()
+    transport_checkpoint = args.transport_checkpoint.resolve()
     output_dir = args.output_dir.resolve()
     capture_dir = output_dir / "captures"
     metadata_dir = output_dir / "metadata"
@@ -77,7 +78,7 @@ def main() -> None:
     device = next(pipeline.generator.parameters()).device
     dtype = torch.bfloat16
     corrector, checkpoint_metadata = load_transport_model(
-        args.transport_checkpoint, device=device, dtype=dtype
+        transport_checkpoint, device=device, dtype=dtype
     )
     get_backend("minwm").validate_checkpoint_config(
         checkpoint_metadata["model_config"], method="cst_r"

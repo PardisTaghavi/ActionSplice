@@ -4,6 +4,9 @@ CST-R and CST-T weights are not included in this repository. Supply a local
 checkpoint path and load upstream backbone weights separately under their
 original licenses.
 
+PyTorch `.pt` files can contain executable pickle data. Load checkpoints only
+from a source you trust.
+
 ## Local checkpoint
 
 ```python
@@ -26,4 +29,5 @@ method = get_backend("hyworld15").validate_checkpoint_config(
 print(method)  # cst_t
 ```
 
-The returned checkpoint contains only the small CST corrector.
+Each ActionSplice checkpoint contains only the small CST corrector; backbone
+weights remain external.

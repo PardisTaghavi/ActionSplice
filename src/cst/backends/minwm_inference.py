@@ -43,9 +43,15 @@ def run_minwm_cst(
     if str(corrector.config.target_parameterization) != "clean_prediction":
         raise ValueError("minWM correctors must predict clean states")
 
+    if noise.ndim != 5:
+        raise ValueError("minWM noise must have shape [B,T,C,H,W]")
     batch_size, frame_count, _, _, _ = noise.shape
     chunk_size = int(pipeline.num_frame_per_block)
     denoising_steps = len(pipeline.denoising_step_list)
+    if int(corrector.config.latent_channels) != int(noise.shape[2]):
+        raise ValueError("Corrector latent channels do not match the minWM state")
+    if int(corrector.config.denoising_steps) != denoising_steps:
+        raise ValueError("Corrector and minWM denoising schedules differ")
     if frame_count % chunk_size:
         raise ValueError("Latent frame count must be divisible by the minWM chunk size")
     events = sorted({int(value) for value in event_pose_indices})
