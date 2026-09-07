@@ -29,9 +29,14 @@
   "target_branch": "new",
   "use_cached_prediction": false,
   "target_parameterization": "state",
-  "decoded_lpips_loss_weight": 0.05,
-  "decoded_temporal_loss_weight": 0.1,
-  "decoded_boundary_loss_weight": 0.1,
+  "loss_weights": {
+    "lambda_state": 1.0,
+    "lambda_residual": 0.0,
+    "lambda_lpips": 0.05,
+    "lambda_temporal": 0.1,
+    "lambda_history_boundary": 0.1,
+    "lambda_mid": 0.0
+  },
   "decoded_latent_crop_height": 20,
   "decoded_latent_crop_width": 32,
   "decoded_history_latent_frames": 1,

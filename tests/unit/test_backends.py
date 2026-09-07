@@ -5,6 +5,7 @@ from pathlib import Path
 from cst.backends import get_backend, validate_training_config
 from cst.data.recurrent_manifest import build_recurrent_capture_tasks
 from cst.data.transport_manifest import build_transport_capture_tasks
+from cst.training.train import _resolve_loss_weights
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,6 +30,17 @@ class BackendRegistryTests(unittest.TestCase):
                 backend, method = validate_training_config(config)
                 self.assertEqual(backend.name, config["backend"])
                 self.assertEqual(method, config["method"])
+                self.assertEqual(
+                    set(_resolve_loss_weights(config).to_dict()),
+                    {
+                        "lambda_state",
+                        "lambda_residual",
+                        "lambda_lpips",
+                        "lambda_temporal",
+                        "lambda_history_boundary",
+                        "lambda_mid",
+                    },
+                )
 
     def test_rejects_horizon_or_wrong_mask(self) -> None:
         config = {

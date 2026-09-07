@@ -115,3 +115,23 @@ Repository cleanup did not add losses. The staged trainer preserves:
 CST-R and CST-T are trained separately. Every release config uses
 `jump_horizons: [0]`; this field remains only for capture/checkpoint schema
 compatibility.
+
+### Configurable loss weights
+
+Training lambdas live under `loss_weights` in each training configuration:
+
+```json
+"loss_weights": {
+  "lambda_state": 1.0,
+  "lambda_residual": 0.0,
+  "lambda_lpips": 0.05,
+  "lambda_temporal": 0.1,
+  "lambda_history_boundary": 0.1,
+  "lambda_mid": 0.0
+}
+```
+
+These are the HY-WM1.5 CST-R defaults. CST-T defaults `lambda_mid` to `0.1`;
+CST-R requires it to remain `0.0`. The minWM release configurations override
+`lambda_residual` to `1.0`. All lambdas must be finite and nonnegative, and the
+resolved values are stored in checkpoints and `training_summary.json`.

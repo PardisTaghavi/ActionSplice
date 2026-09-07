@@ -10,8 +10,81 @@ import sys
 import time
 import warnings
 from copy import deepcopy
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+
+
+@dataclass(frozen=True)
+class LossWeights:
+    """Paper loss coefficients resolved from a training configuration."""
+
+    lambda_state: float
+    lambda_residual: float
+    lambda_lpips: float
+    lambda_temporal: float
+    lambda_history_boundary: float
+    lambda_mid: float
+
+    def to_dict(self) -> dict[str, float]:
+        return asdict(self)
+
+
+_LEGACY_LOSS_KEYS = {
+    "lambda_residual": "delta_loss_weight",
+    "lambda_lpips": "decoded_lpips_loss_weight",
+    "lambda_temporal": "decoded_temporal_loss_weight",
+    "lambda_history_boundary": "decoded_boundary_loss_weight",
+    "lambda_mid": "intra_chunk_boundary_loss_weight",
+}
+
+
+def _resolve_loss_weights(config: dict[str, Any]) -> LossWeights:
+    """Resolve configurable lambdas with the current HY objective as default."""
+
+    method = str(config.get("method", "cst_r"))
+    defaults = {
+        "lambda_state": 1.0,
+        "lambda_residual": 0.0,
+        "lambda_lpips": 0.05,
+        "lambda_temporal": 0.1,
+        "lambda_history_boundary": 0.1,
+        "lambda_mid": 0.1 if method == "cst_t" else 0.0,
+    }
+    configured = config.get("loss_weights", {})
+    if not isinstance(configured, dict):
+        raise ValueError("loss_weights must be a JSON object")
+    unknown = sorted(set(configured) - set(defaults))
+    if unknown:
+        raise ValueError(f"Unknown loss weights: {unknown}")
+
+    resolved: dict[str, float] = {}
+    for name, default in defaults.items():
+        legacy_name = _LEGACY_LOSS_KEYS.get(name)
+        if name in configured and legacy_name is not None and legacy_name in config:
+            raise ValueError(
+                f"Specify loss_weights.{name} or legacy {legacy_name}, not both"
+            )
+        value = (
+            configured[name]
+            if name in configured
+            else config[legacy_name]
+            if legacy_name is not None and legacy_name in config
+            else default
+        )
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"loss_weights.{name} must be numeric") from error
+        if not math.isfinite(numeric) or numeric < 0.0:
+            raise ValueError(f"loss_weights.{name} must be finite and nonnegative")
+        resolved[name] = numeric
+
+    if method == "cst_r" and resolved["lambda_mid"] != 0.0:
+        raise ValueError("CST-R requires loss_weights.lambda_mid=0")
+    if not any(value > 0.0 for value in resolved.values()):
+        raise ValueError("At least one loss weight must be positive")
+    return LossWeights(**resolved)
 
 
 class _MetricLogger:
@@ -175,6 +248,7 @@ def main() -> None:
 
     config = _load_config(args.config)
     validate_training_config(config)
+    loss_weights = _resolve_loss_weights(config)
     seed = int(config["seed"])
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -393,9 +467,9 @@ def main() -> None:
         target_branch=target_branch,
     )
     perceptual_weights = {
-        "lpips": float(config.get("decoded_lpips_loss_weight", 0.0)),
-        "temporal": float(config.get("decoded_temporal_loss_weight", 0.0)),
-        "boundary": float(config.get("decoded_boundary_loss_weight", 0.0)),
+        "lpips": loss_weights.lambda_lpips,
+        "temporal": loss_weights.lambda_temporal,
+        "boundary": loss_weights.lambda_history_boundary,
     }
     if any(weight < 0.0 for weight in perceptual_weights.values()):
         raise ValueError("Decoded perceptual loss weights must be nonnegative")
@@ -466,6 +540,7 @@ def main() -> None:
             payload["ema_decay"] = ema_decay
         if lr_scheduler is not None:
             payload["lr_scheduler"] = lr_scheduler.state_dict()
+        payload["loss_weights"] = loss_weights.to_dict()
         return payload
 
     wall_started = time.perf_counter()
@@ -486,11 +561,10 @@ def main() -> None:
                 result,
                 effective_batch,
                 target_parameterization=model_config.target_parameterization,
-                delta_loss_weight=float(config.get("delta_loss_weight", 0.0)),
+                state_loss_weight=loss_weights.lambda_state,
+                delta_loss_weight=loss_weights.lambda_residual,
                 latent_gradient_loss_weight=float(config.get("latent_gradient_loss_weight", 0.0)),
-                intra_chunk_boundary_loss_weight=float(
-                    config.get("intra_chunk_boundary_loss_weight", 0.0)
-                ),
+                intra_chunk_boundary_loss_weight=loss_weights.lambda_mid,
             )
             decoded_loss_metrics: dict[str, Any] = {}
             if decoded_perceptual is not None:
@@ -703,6 +777,7 @@ def main() -> None:
         "source_branch": source_branch,
         "target_branch": target_branch,
         "decoded_perceptual_enabled": decoded_perceptual is not None,
+        "loss_weights": loss_weights.to_dict(),
         "ema_decay": ema_decay,
         "learning_rate_scheduler": scheduler_name,
         "initial_learning_rate": float(config["learning_rate"]),
@@ -1018,12 +1093,15 @@ def _training_losses(
     batch: dict[str, Any],
     *,
     target_parameterization: str,
+    state_loss_weight: float = 1.0,
     delta_loss_weight: float = 0.0,
     latent_gradient_loss_weight: float = 0.0,
     intra_chunk_boundary_loss_weight: float = 0.0,
 ) -> tuple[Any, Any, dict[str, Any]]:
     from ..core.model import normalized_state_mse, reconstruct_noisy_state
 
+    if not math.isfinite(state_loss_weight) or state_loss_weight < 0.0:
+        raise ValueError("state_loss_weight must be finite and nonnegative")
     prediction = result["predicted_target"]
     if target_parameterization == "state":
         suffix_mask = batch.get("temporal_suffix_mask")
@@ -1036,9 +1114,10 @@ def _training_losses(
             if suffix_mask is not None
             else normalized_state_mse(prediction, batch["target_state"])
         )
-        loss = state_loss
+        loss = state_loss_weight * state_loss
         loss_terms = {
             "loss/state_nmse": state_loss,
+            "loss/state_weighted": loss,
         }
         if delta_loss_weight < 0.0:
             raise ValueError("delta_loss_weight must be nonnegative")
@@ -1090,10 +1169,10 @@ def _training_losses(
         if suffix_mask is not None
         else normalized_state_mse(prediction, batch["clean_target"])
     )
-    loss = endpoint_loss
+    loss = state_loss_weight * endpoint_loss
     loss_terms = {
         "loss/endpoint_nmse": endpoint_loss,
-        "loss/endpoint_weighted": endpoint_loss,
+        "loss/endpoint_weighted": loss,
     }
     if delta_loss_weight < 0.0:
         raise ValueError("delta_loss_weight must be nonnegative")

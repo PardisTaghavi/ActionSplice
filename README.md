@@ -103,6 +103,11 @@ suffix-masked CST-T reconstruction, the CST-T intra-chunk boundary term, and
 optional decoded LPIPS/temporal/boundary terms. Repository cleanup did not
 introduce new losses.
 
+All loss coefficients are configurable through the `loss_weights` block. Its
+defaults reproduce the current HY-WM1.5 objective; the minWM configurations
+override the residual coefficient. See the training guide for the complete
+lambda schema.
+
 Capture commands, manifest formats, split checks, and backend-specific
 examples are documented in [docs/training.md](docs/training.md).
 
