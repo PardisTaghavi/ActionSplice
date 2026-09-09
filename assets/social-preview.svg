@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1022"/>
+      <stop offset="0.58" stop-color="#171348"/>
+      <stop offset="1" stop-color="#35145d"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6ee7f9"/>
+      <stop offset="1" stop-color="#b889ff"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <circle cx="1120" cy="80" r="240" fill="#805ad5" opacity="0.12"/>
+  <circle cx="90" cy="610" r="260" fill="#22d3ee" opacity="0.08"/>
+  <g font-family="Inter, Helvetica, Arial, sans-serif" fill="#f8fafc">
+    <text x="86" y="205" font-size="92" font-weight="750" letter-spacing="-3">ActionSplice</text>
+    <text x="90" y="268" font-size="31" fill="#d7d9ef">In-Flight Action Editing for Interactive World Models</text>
+    <text x="90" y="522" font-size="23" fill="#aab3d5">Same-step state transport  •  CST-R  •  CST-T</text>
+  </g>
+  <g transform="translate(92 342)">
+    <path d="M0 48 H1000" stroke="#5b648c" stroke-width="4" opacity="0.7"/>
+    <g fill="#22295a" stroke="#8793c5" stroke-width="2">
+      <rect x="0" y="13" width="116" height="70" rx="12"/>
+      <rect x="134" y="13" width="116" height="70" rx="12"/>
+      <rect x="268" y="13" width="116" height="70" rx="12"/>
+      <rect x="402" y="13" width="116" height="70" rx="12"/>
+      <rect x="536" y="13" width="116" height="70" rx="12"/>
+      <rect x="670" y="13" width="116" height="70" rx="12"/>
+      <rect x="804" y="13" width="116" height="70" rx="12"/>
+    </g>
+    <path d="M318 -6 C360 -88 456 -88 482 -6" fill="none" stroke="url(#flow)" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
+    <path d="M470 -18 L486 -4 L466 4" fill="none" stroke="#b889ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="318" cy="48" r="11" fill="#6ee7f9" filter="url(#glow)"/>
+    <circle cx="482" cy="48" r="11" fill="#b889ff" filter="url(#glow)"/>
+    <text x="346" y="-38" font-family="Inter, Helvetica, Arial, sans-serif" font-size="20" fill="#e8e5ff">action update</text>
+  </g>
+</svg>

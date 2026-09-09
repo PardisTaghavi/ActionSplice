@@ -16,6 +16,8 @@ dependencies = [
 ]
 
 [project.urls]
+Homepage = "https://pardistaghavi.github.io/actionsplice-website/"
+Paper = "https://arxiv.org/abs/2609.08230"
 Repository = "https://github.com/PardisTaghavi/ActionSplice"
 
 [project.optional-dependencies]

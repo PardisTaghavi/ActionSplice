@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible ActionSplice problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private checkpoints, credentials, or restricted data.
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - minWM
+        - HY-WM1.5
+        - Shared code
+    validations:
+      required: true
+  - type: dropdown
+    id: variant
+    attributes:
+      label: Variant
+      options:
+        - CST-R
+        - CST-T
+        - Not applicable
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide a minimal command or code sample and a sanitized config.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python, PyTorch, CUDA, GPU, and upstream revision.
+    validations:
+      required: true

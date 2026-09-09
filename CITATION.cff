@@ -5,34 +5,55 @@ type: software
 version: 0.1.0
 date-released: 2026-09-09
 doi: "10.5281/zenodo.22680102"
-url: "https://github.com/PardisTaghavi/ActionSplice"
+url: "https://pardistaghavi.github.io/actionsplice-website/"
 repository-code: "https://github.com/PardisTaghavi/ActionSplice"
 license: Apache-2.0
+abstract: "ActionSplice edits an active world-model rollout when the control input changes during sampling. Its Counterfactual State Transport corrector updates the backbone-native state at the current solver step, allowing sampling to resume without replaying completed evaluations."
+keywords:
+  - interactive world models
+  - action conditioning
+  - video generation
+  - counterfactual state transport
+  - diffusion models
+identifiers:
+  - type: doi
+    value: "10.48550/arXiv.2609.08230"
+    description: "ActionSplice paper on arXiv"
 authors:
   - family-names: Taghavi
     given-names: Pardis
+    affiliation: "Texas A&M University"
   - family-names: Guo
     given-names: Tingyu
+    affiliation: "Texas A&M University"
   - family-names: Lossner
     given-names: Jonas
+    affiliation: "Texas A&M University"
   - family-names: Pandey
     given-names: Gaurav
+    affiliation: "Texas A&M University"
   - family-names: Langari
     given-names: Reza
+    affiliation: "Texas A&M University"
 preferred-citation:
   type: article
   title: "ActionSplice: In-Flight Action Editing for Interactive World Models"
   authors:
     - family-names: Taghavi
       given-names: Pardis
+      affiliation: "Texas A&M University"
     - family-names: Guo
       given-names: Tingyu
+      affiliation: "Texas A&M University"
     - family-names: Lossner
       given-names: Jonas
+      affiliation: "Texas A&M University"
     - family-names: Pandey
       given-names: Gaurav
+      affiliation: "Texas A&M University"
     - family-names: Langari
       given-names: Reza
+      affiliation: "Texas A&M University"
   year: 2026
   doi: "10.48550/arXiv.2609.08230"
   url: "https://arxiv.org/abs/2609.08230"

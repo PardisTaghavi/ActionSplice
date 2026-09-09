@@ -2,9 +2,13 @@
 
 **Same-step state editing for interruptible world models.**
 
+[![CI](https://github.com/PardisTaghavi/ActionSplice/actions/workflows/ci.yml/badge.svg)](https://github.com/PardisTaghavi/ActionSplice/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22680101.svg)](https://doi.org/10.5281/zenodo.22680101)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 **Paper:** [ActionSplice: In-Flight Action Editing for Interactive World Models](https://arxiv.org/abs/2609.08230)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22680101.svg)](https://doi.org/10.5281/zenodo.22680101)
+**Project page:** [pardistaghavi.github.io/actionsplice-website](https://pardistaghavi.github.io/actionsplice-website/)
 
 ActionSplice updates an active world-model rollout when the control input
 changes before the current video chunk has finished sampling. Instead of
@@ -205,3 +209,6 @@ Public commands, files, and documentation use CST-R/CST-T.
 ## License
 
 ActionSplice is released under the [Apache License 2.0](LICENSE).
+
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) for the
+development and pull-request workflow.
