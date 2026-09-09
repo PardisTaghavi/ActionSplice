@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use ActionSplice, please cite the paper below."
+title: "ActionSplice"
+type: software
+version: 0.1.0
+date-released: 2026-09-09
+url: "https://github.com/PardisTaghavi/ActionSplice"
+repository-code: "https://github.com/PardisTaghavi/ActionSplice"
+license: Apache-2.0
+authors:
+  - family-names: Taghavi
+    given-names: Pardis
+  - family-names: Guo
+    given-names: Tingyu
+  - family-names: Lossner
+    given-names: Jonas
+  - family-names: Pandey
+    given-names: Gaurav
+  - family-names: Langari
+    given-names: Reza
+preferred-citation:
+  type: article
+  title: "ActionSplice: In-Flight Action Editing for Interactive World Models"
+  authors:
+    - family-names: Taghavi
+      given-names: Pardis
+    - family-names: Guo
+      given-names: Tingyu
+    - family-names: Lossner
+      given-names: Jonas
+    - family-names: Pandey
+      given-names: Gaurav
+    - family-names: Langari
+      given-names: Reza
+  year: 2026
+  doi: "10.48550/arXiv.2609.08230"
+  url: "https://arxiv.org/abs/2609.08230"
