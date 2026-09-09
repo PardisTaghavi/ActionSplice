@@ -4,6 +4,8 @@
 
 **Paper:** [ActionSplice: In-Flight Action Editing for Interactive World Models](https://arxiv.org/abs/2609.08230)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22680101.svg)](https://doi.org/10.5281/zenodo.22680101)
+
 ActionSplice updates an active world-model rollout when the control input
 changes before the current video chunk has finished sampling. Instead of
 restarting the chunk or skipping solver steps, ActionSplice applies one learned

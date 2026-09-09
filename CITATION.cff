@@ -4,6 +4,7 @@ title: "ActionSplice"
 type: software
 version: 0.1.0
 date-released: 2026-09-09
+doi: "10.5281/zenodo.22680102"
 url: "https://github.com/PardisTaghavi/ActionSplice"
 repository-code: "https://github.com/PardisTaghavi/ActionSplice"
 license: Apache-2.0
