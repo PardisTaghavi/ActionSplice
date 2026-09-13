@@ -23,6 +23,7 @@ and lets the original backbone finish its normal denoising trajectory.
 - [Training](#training)
 - [Inference and model loading](#inference-and-model-loading)
 - [Repository structure](#repository-structure)
+- [Citation](#citation)
 
 ## Method
 
@@ -205,6 +206,19 @@ Research checkpoints retain legacy role strings for strict validation:
 Public commands, files, and documentation use CST-R/CST-T.
 
 </details>
+
+## Citation
+
+If you use ActionSplice, please cite:
+
+```bibtex
+@article{taghavi2026actionsplice,
+  title={ActionSplice: In-Flight Action Editing for Interactive World Models},
+  author={Taghavi, Pardis and Guo, Tingyu and Lossner, Jonas and Pandey, Gaurav and Langari, Reza},
+  journal={arXiv preprint arXiv:2609.08230},
+  year={2026}
+}
+```
 
 ## License
 
