@@ -10,6 +10,10 @@
 
 **Project page:** [pardistaghavi.github.io/actionsplice-website](https://pardistaghavi.github.io/actionsplice-website/)
 
+<p align="center">
+  <img src="assets/actionsplice-method-flow.gif" width="960" alt="ActionSplice method overview">
+</p>
+
 ActionSplice updates an active world-model rollout when the control input
 changes before the current video chunk has finished sampling. Instead of
 restarting the chunk or skipping solver steps, ActionSplice applies one learned
