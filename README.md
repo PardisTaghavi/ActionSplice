@@ -15,10 +15,13 @@
 </p>
 
 ActionSplice updates an active world-model rollout when the control input
-changes before the current video chunk has finished sampling. Instead of
-restarting the chunk or skipping solver steps, ActionSplice applies one learned
-**Counterfactual State Transport (CST)** corrector at the current solver step
-and lets the original backbone finish its normal denoising trajectory.
+changes before the current video chunk has finished sampling. Waiting delays
+the response, directly switching the conditioning leaves the intermediate
+solver state shaped by the previous action, and restarting repeats completed
+computation. A learned **Counterfactual State Transport (CST)** corrector moves
+the interrupted solver state toward the matched counterfactual state at the
+same solver step, then lets the frozen backbone and sampler finish the normal
+trajectory without replaying completed evaluations.
 
 ## Contents
 
@@ -36,7 +39,7 @@ ActionSplice provides two separately trained correctors:
 | Variant | Edited region | Intended use |
 |---|---|---|
 | **CST-R** | Complete active chunk | Retarget a chunk after a control interruption |
-| **CST-T** | Uncommitted suffix only | Preserve already committed frames while retargeting the remainder |
+| **CST-T** | Temporal suffix at boundary `m` | Preserve the temporal prefix at the intervention step and correct only the suffix |
 
 ### Backend state conventions
 
